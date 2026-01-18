@@ -14,8 +14,8 @@ def predict_progression(bmi, bp, s1, s2, s3, s4, s5, s6):
     """
 
     X = np.array([[
-        0.0,   # age (dummy)
-        0.0,   # sex (dummy)
+        0.0,  
+        0.0,  
         bmi,
         bp,
         s1,

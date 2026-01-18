@@ -7,7 +7,7 @@ API = "http://127.0.0.1:8000"
 st.set_page_config(page_title="Disease Forecast", layout="wide")
 st.title("🩺 Disease Progression Forecasting System")
 
-# ----------------- Helper functions -----------------
+
 def safe_get_json(url: str):
     try:
         r = requests.get(url)
@@ -29,20 +29,19 @@ def load_patients():
     return data
 
 def get_patient_options(patients):
-    # Dropdown: "1 - Ravi Kumar"
+
     return {f"{p['id']} - {p['name']}": p["id"] for p in patients}
 
-# Sidebar menu
+
 menu = st.sidebar.selectbox(
     "Menu",
     ["Home", "Patients", "Clinical Records", "Prediction",]
 )
 
-# Load patients globally for dropdown
+
 patients = load_patients()
 patient_options = get_patient_options(patients)
 
-# ---------------- HOME ----------------
 if menu == "Home":
     st.markdown(
         """
@@ -56,11 +55,10 @@ if menu == "Home":
         unsafe_allow_html=True
     )
 
-    # ---- Load dashboard data ----
+
     code_pat, pat_data = safe_get_json(f"{API}/patients/")
     total_patients = len(pat_data) if code_pat == 200 and isinstance(pat_data, list) else 0
 
-    # To estimate totals, we fetch records/preds for each patient
     total_records = 0
     total_predictions = 0
     recent_preds = []
@@ -69,12 +67,11 @@ if menu == "Home":
         for p in pat_data:
             pid = p["id"]
 
-            # records count
             c1, recs = safe_get_json(f"{API}/records/{pid}")
             if c1 == 200 and isinstance(recs, list):
                 total_records += len(recs)
 
-            # predictions count + recent predictions
+
             c2, preds = safe_get_json(f"{API}/predict/history/{pid}")
             if c2 == 200 and isinstance(preds, list):
                 total_predictions += len(preds)
@@ -83,11 +80,10 @@ if menu == "Home":
                     pr["patient_name"] = p["name"]
                     recent_preds.append(pr)
 
-    # sort recent predictions by id desc (latest first)
     if recent_preds and "id" in recent_preds[0]:
         recent_preds = sorted(recent_preds, key=lambda x: x.get("id", 0), reverse=True)
 
-    # ---- Metrics Cards ----
+
     st.markdown("## 📌 Dashboard Overview")
 
     c1, c2, c3 = st.columns(3)
@@ -95,13 +91,12 @@ if menu == "Home":
     c2.metric("📊 Total Records", total_records)
     c3.metric("🤖 Total Predictions", total_predictions)
 
-    # ---- Recent Predictions Table ----
     st.markdown("## 🕒 Recent Predictions")
 
     if recent_preds:
         df = pd.DataFrame(recent_preds)
 
-        # show only important columns
+        
         show_cols = []
         for col in ["id", "patient_name", "patient_id", "predicted_score", "risk_level", "created_at"]:
             if col in df.columns:
@@ -111,13 +106,12 @@ if menu == "Home":
     else:
         st.info("No predictions found yet. Add record and run prediction first.")
 
-# ---------------- PATIENTS ----------------
 elif menu == "Patients":
     st.subheader("👤 Patient Management")
 
     col1, col2 = st.columns([1, 1])
 
-    # Create Patient
+
     with col1:
         st.markdown("### ➕ Add Patient")
         name = st.text_input("Name")
@@ -136,7 +130,7 @@ elif menu == "Patients":
 
             st.info("Refresh the page or switch menu to reload dropdown patient list.")
 
-    # List Patients
+   
     with col2:
         st.markdown("### 📋 Patient List")
         if patients:
@@ -145,7 +139,6 @@ elif menu == "Patients":
         else:
             st.warning("No patients available. Create one first.")
 
-# ---------------- RECORDS ----------------
 elif menu == "Clinical Records":
     st.subheader("📊 Clinical Records")
 
@@ -201,7 +194,6 @@ elif menu == "Clinical Records":
     else:
         st.info("No records found for this patient.")
 
-# ---------------- PREDICTION ----------------
 elif menu == "Prediction":
     st.subheader("🤖 Disease Progression Prediction")
 
@@ -235,13 +227,12 @@ elif menu == "Prediction":
         if code == 200 and isinstance(preds, list) and len(preds) > 0:
             df = pd.DataFrame(preds)
 
-            # ensure datetime parsing
+            
             if "created_at" in df.columns:
                 df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
 
             st.dataframe(df, use_container_width=True)
 
-            # ---------- Graph ----------
             if "predicted_score" in df.columns and "created_at" in df.columns:
                 chart_df = df[["created_at", "predicted_score"]].dropna()
                 chart_df = chart_df.sort_values("created_at")
